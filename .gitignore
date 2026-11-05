@@ -1,0 +1,40 @@
+# ==========================================
+# Python & Jupyter
+# ==========================================
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints/
+
+# ==========================================
+# Compilados C/C++ e Binários Temporários
+# ==========================================
+*.o
+*.out
+-.o
+a.out
+sobel
+sobel_temp*
+sobel_cand*
+
+# ==========================================
+# Xilinx Vitis HLS (Pastas pesadas de síntese e logs)
+# ==========================================
+proj_somadores/
+proj_sobel_aproximado/
+*.log
+*.jou
+*.pb
+.Xil/
+
+
+# ==========================================
+# Sistema Operacional / IDEs
+# ==========================================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

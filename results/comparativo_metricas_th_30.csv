@@ -1,0 +1,4 @@
+Threshold,Threshold_Tag,Metrica,Nome_Legivel,Setup,LUTs,Economia_LUTs (%),SSIM_Medio_Treino,SSIM_Mediana_Treino,SSIM_Min_Treino,Desvio_Treino,PSNR_Treino (dB),MSE_Treino,SSIM_Medio_Teste,SSIM_Mediana_Teste,SSIM_Min_Teste,Desvio_Teste,PSNR_Teste (dB),MSE_Teste
+0.3,30%,ssim_medio,SSIM Médio (Média Aritmética),"[5, 4, 5, 10, 9]",72,24.2,0.7034,0.7089,0.3625,0.1406,19.97,667.63,0.6851,0.6951,0.3388,0.1937,21.43,597.33
+0.3,30%,ssim_mediana,SSIM Mediana (Robusta a Outliers),"[5, 4, 5, 10, 9]",72,24.2,0.7034,0.7089,0.3625,0.1406,19.97,667.63,0.6851,0.6951,0.3388,0.1937,21.43,597.33
+0.3,30%,ssim_mediageometrica,SSIM Geométrico (Média Geométrica),"[4, 9, 4, 9, 10]",74,22.1,0.7677,0.7764,0.4231,0.1321,22.34,388.34,0.74,0.75,0.3949,0.1772,23.72,345.65

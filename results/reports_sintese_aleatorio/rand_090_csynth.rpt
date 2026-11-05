@@ -1,0 +1,186 @@
+
+
+================================================================
+== Vitis HLS Report for 'sobel'
+================================================================
+* Date:           Wed Oct 14 17:03:56 2026
+
+* Version:        2022.2 (Build 3670227 on Oct 13 2022)
+* Project:        proj_sobel_rand_090
+* Solution:       solution1 (Vivado IP Flow Target)
+* Product family: spartan7
+* Target device:  xc7s50-csga324-1
+
+
+================================================================
+== Performance Estimates
+================================================================
++ Timing: 
+    * Summary: 
+    +--------+----------+----------+------------+
+    |  Clock |  Target  | Estimated| Uncertainty|
+    +--------+----------+----------+------------+
+    |ap_clk  |  10.00 ns|  7.300 ns|     2.70 ns|
+    +--------+----------+----------+------------+
+
++ Latency: 
+    * Summary: 
+    +---------+---------+----------+----------+-----+-----+----------+
+    |  Latency (cycles) |  Latency (absolute) |  Interval | Pipeline |
+    |   min   |   max   |    min   |    max   | min | max |   Type   |
+    +---------+---------+----------+----------+-----+-----+----------+
+    |        ?|        ?|         ?|         ?|    ?|    ?|  dataflow|
+    +---------+---------+----------+----------+-----+-----+----------+
+
+    + Detail: 
+        * Instance: 
+        +----------------+-------------+---------+------------+-----------+------------+-----+------------+---------+
+        |                |             |   Latency (cycles)   |   Latency (absolute)   |     Interval     | Pipeline|
+        |    Instance    |    Module   |   min   |     max    |    min    |     max    | min |     max    |   Type  |
+        +----------------+-------------+---------+------------+-----------+------------+-----+------------+---------+
+        |ReadFromMem_U0  |ReadFromMem  |        ?|           ?|          ?|           ?|    ?|           ?|       no|
+        |Window2D_U0     |Window2D     |        8|    16781321|  80.000 ns|   0.168 sec|    8|    16781321|       no|
+        |entry_proc_U0   |entry_proc   |        0|           0|       0 ns|        0 ns|    0|           0|       no|
+        |Filter2D_U0     |Filter2D     |        8|  4294836237|  80.000 ns|  42.948 sec|    8|  4294836237|       no|
+        |WriteToMem_U0   |WriteToMem   |        6|    33550343|  60.000 ns|   0.336 sec|    6|    33550343|       no|
+        +----------------+-------------+---------+------------+-----------+------------+-----+------------+---------+
+
+        * Loop: 
+        N/A
+
+
+
+================================================================
+== Utilization Estimates
+================================================================
+* Summary: 
++-----------------+---------+-----+-------+-------+-----+
+|       Name      | BRAM_18K| DSP |   FF  |  LUT  | URAM|
++-----------------+---------+-----+-------+-------+-----+
+|DSP              |        -|    -|      -|      -|    -|
+|Expression       |        -|    -|      0|     12|    -|
+|FIFO             |        -|    -|   1000|    680|    -|
+|Instance         |        4|    8|   1498|   2108|    0|
+|Memory           |        -|    -|      -|      -|    -|
+|Multiplexer      |        -|    -|      -|     18|    -|
+|Register         |        -|    -|      2|      -|    -|
++-----------------+---------+-----+-------+-------+-----+
+|Total            |        4|    8|   2500|   2818|    0|
++-----------------+---------+-----+-------+-------+-----+
+|Available        |      150|  120|  65200|  32600|    0|
++-----------------+---------+-----+-------+-------+-----+
+|Utilization (%)  |        2|    6|      3|      8|    0|
++-----------------+---------+-----+-------+-------+-----+
+
++ Detail: 
+    * Instance: 
+    +----------------+-------------+---------+----+-----+-----+-----+
+    |    Instance    |    Module   | BRAM_18K| DSP|  FF | LUT | URAM|
+    +----------------+-------------+---------+----+-----+-----+-----+
+    |Filter2D_U0     |Filter2D     |        0|   5|  712|  954|    0|
+    |ReadFromMem_U0  |ReadFromMem  |        0|   1|  177|  327|    0|
+    |Window2D_U0     |Window2D     |        4|   1|  362|  470|    0|
+    |WriteToMem_U0   |WriteToMem   |        0|   1|  244|  328|    0|
+    |entry_proc_U0   |entry_proc   |        0|   0|    3|   29|    0|
+    +----------------+-------------+---------+----+-----+-----+-----+
+    |Total           |             |        4|   8| 1498| 2108|    0|
+    +----------------+-------------+---------+----+-----+-----+-----+
+
+    * DSP: 
+    N/A
+
+    * Memory: 
+    N/A
+
+    * FIFO: 
+    +-----------------+---------+-----+----+-----+------+-----+---------+
+    |       Name      | BRAM_18K|  FF | LUT| URAM| Depth| Bits| Size:D*B|
+    +-----------------+---------+-----+----+-----+------+-----+---------+
+    |height_c12_U     |        0|  100|   0|    -|     2|   16|       32|
+    |height_c13_U     |        0|  100|   0|    -|     2|   16|       32|
+    |height_c_U       |        0|  100|   0|    -|     2|   16|       32|
+    |m_c_U            |        0|  100|   0|    -|     4|   16|       64|
+    |output_stream_U  |        0|  100|   0|    -|     2|    8|       16|
+    |pixel_stream_U   |        0|  100|   0|    -|     2|    8|       16|
+    |width_c14_U      |        0|  100|   0|    -|     2|   16|       32|
+    |width_c15_U      |        0|  100|   0|    -|     2|   16|       32|
+    |width_c_U        |        0|  100|   0|    -|     2|   16|       32|
+    |window_stream_U  |        0|  100|   0|    -|     2|   72|      144|
+    +-----------------+---------+-----+----+-----+------+-----+---------+
+    |Total            |        0| 1000|   0|    0|    22|  200|      432|
+    +-----------------+---------+-----+----+-----+------+-----+---------+
+
+    * Expression: 
+    +---------------------------------+----------+----+---+----+------------+------------+
+    |          Variable Name          | Operation| DSP| FF| LUT| Bitwidth P0| Bitwidth P1|
+    +---------------------------------+----------+----+---+----+------------+------------+
+    |ReadFromMem_U0_ap_start          |       and|   0|  0|   2|           1|           1|
+    |ap_idle                          |       and|   0|  0|   2|           1|           1|
+    |ap_sync_ready                    |       and|   0|  0|   2|           1|           1|
+    |entry_proc_U0_ap_start           |       and|   0|  0|   2|           1|           1|
+    |ap_sync_ReadFromMem_U0_ap_ready  |        or|   0|  0|   2|           1|           1|
+    |ap_sync_entry_proc_U0_ap_ready   |        or|   0|  0|   2|           1|           1|
+    +---------------------------------+----------+----+---+----+------------+------------+
+    |Total                            |          |   0|  0|  12|           6|           6|
+    +---------------------------------+----------+----+---+----+------------+------------+
+
+    * Multiplexer: 
+    +-------------------------------------+----+-----------+-----+-----------+
+    |                 Name                | LUT| Input Size| Bits| Total Bits|
+    +-------------------------------------+----+-----------+-----+-----------+
+    |ap_sync_reg_ReadFromMem_U0_ap_ready  |   9|          2|    1|          2|
+    |ap_sync_reg_entry_proc_U0_ap_ready   |   9|          2|    1|          2|
+    +-------------------------------------+----+-----------+-----+-----------+
+    |Total                                |  18|          4|    2|          4|
+    +-------------------------------------+----+-----------+-----+-----------+
+
+    * Register: 
+    +-------------------------------------+---+----+-----+-----------+
+    |                 Name                | FF| LUT| Bits| Const Bits|
+    +-------------------------------------+---+----+-----+-----------+
+    |ap_sync_reg_ReadFromMem_U0_ap_ready  |  1|   0|    1|          0|
+    |ap_sync_reg_entry_proc_U0_ap_ready   |  1|   0|    1|          0|
+    +-------------------------------------+---+----+-----+-----------+
+    |Total                                |  2|   0|    2|          0|
+    +-------------------------------------+---+----+-----+-----------+
+
+
+
+================================================================
+== Interface
+================================================================
+* Summary: 
++--------------+-----+-----+------------+--------------+--------------+
+|   RTL Ports  | Dir | Bits|  Protocol  | Source Object|    C Type    |
++--------------+-----+-----+------------+--------------+--------------+
+|src_address0  |  out|   24|   ap_memory|           src|         array|
+|src_ce0       |  out|    1|   ap_memory|           src|         array|
+|src_d0        |  out|    8|   ap_memory|           src|         array|
+|src_q0        |   in|    8|   ap_memory|           src|         array|
+|src_we0       |  out|    1|   ap_memory|           src|         array|
+|src_address1  |  out|   24|   ap_memory|           src|         array|
+|src_ce1       |  out|    1|   ap_memory|           src|         array|
+|src_d1        |  out|    8|   ap_memory|           src|         array|
+|src_q1        |   in|    8|   ap_memory|           src|         array|
+|src_we1       |  out|    1|   ap_memory|           src|         array|
+|dst_address0  |  out|   24|   ap_memory|           dst|         array|
+|dst_ce0       |  out|    1|   ap_memory|           dst|         array|
+|dst_d0        |  out|    8|   ap_memory|           dst|         array|
+|dst_q0        |   in|    8|   ap_memory|           dst|         array|
+|dst_we0       |  out|    1|   ap_memory|           dst|         array|
+|dst_address1  |  out|   24|   ap_memory|           dst|         array|
+|dst_ce1       |  out|    1|   ap_memory|           dst|         array|
+|dst_d1        |  out|    8|   ap_memory|           dst|         array|
+|dst_q1        |   in|    8|   ap_memory|           dst|         array|
+|dst_we1       |  out|    1|   ap_memory|           dst|         array|
+|height        |   in|   16|     ap_none|        height|        scalar|
+|width         |   in|   16|     ap_none|         width|        scalar|
+|m             |   in|   16|     ap_none|             m|        scalar|
+|ap_clk        |   in|    1|  ap_ctrl_hs|         sobel|  return value|
+|ap_rst        |   in|    1|  ap_ctrl_hs|         sobel|  return value|
+|ap_start      |   in|    1|  ap_ctrl_hs|         sobel|  return value|
+|ap_done       |  out|    1|  ap_ctrl_hs|         sobel|  return value|
+|ap_ready      |  out|    1|  ap_ctrl_hs|         sobel|  return value|
+|ap_idle       |  out|    1|  ap_ctrl_hs|         sobel|  return value|
++--------------+-----+-----+------------+--------------+--------------+
+
