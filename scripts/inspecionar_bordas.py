@@ -17,6 +17,7 @@ Exemplos de uso:
 
 import argparse
 import ast
+import math
 import os
 import sys
 import cv2
@@ -103,9 +104,10 @@ def inspecionar_imagem(
     dataset_dir=DATASET_DIR_PADRAO,
     output_dir=".",
     mostrar=True,
-    gerar_faltantes=True
+    gerar_faltantes=True,
+    colunas=4
 ):
-    """Gera o painel comparativo visual e exibe as métricas de qualidade."""
+    """Gera o painel comparativo visual em formato de grid e exibe as métricas de qualidade."""
     custo_exato = obter_custo_exato(df_resultados)
     df_aprox = df_resultados[df_resultados["Limite_Erro"] > 0].reset_index(drop=True)
 
@@ -122,24 +124,32 @@ def inspecionar_imagem(
     img_orig = cv2.imread(img_orig_path, cv2.IMREAD_GRAYSCALE)
     img_exata = cv2.imread(img_exata_path, cv2.IMREAD_GRAYSCALE)
 
-    total_colunas = len(df_aprox) + 2
-    fig, axes = plt.subplots(1, total_colunas, figsize=(3.2 * total_colunas, 4.4))
-    if total_colunas == 1:
-        axes = [axes]
+    total_imagens = len(df_aprox) + 2
+    ncols = min(max(1, int(colunas)), total_imagens)
+    nrows = math.ceil(total_imagens / ncols)
+
+    fig, axes = plt.subplots(
+        nrows,
+        ncols,
+        figsize=(2.75 * ncols, 3.55 * nrows),
+        sharex=True,
+        sharey=True
+    )
+    axes_flat = np.array(axes).reshape(-1)
+
+    def estilizar_eixo(ax, titulo_topo, texto_baixo=""):
+        ax.set_title(titulo_topo, fontsize=13, fontweight="normal", pad=6)
+        ax.tick_params(axis="both", which="major", labelsize=10)
+        if texto_baixo:
+            ax.set_xlabel(texto_baixo, fontsize=11.5, fontweight="normal", labelpad=6)
 
     # Painel 1: Original
-    axes[0].imshow(img_orig, cmap="gray")
-    axes[0].set_title(f"Original ({img_id}.ppm)\n(Input)\n---\n---\n---", fontsize=9, pad=8)
-    axes[0].axis("off")
+    axes_flat[0].imshow(img_orig, cmap="gray")
+    estilizar_eixo(axes_flat[0], "Original")
 
     # Painel 2: Exato
-    axes[1].imshow(img_exata, cmap="gray")
-    axes[1].set_title(
-        f"Exato (Referência)\n({custo_exato} LUTs)\nErro: 0.0000\nSSIM: 1.0000\nPSNR: ∞ dB",
-        fontsize=9,
-        pad=8
-    )
-    axes[1].axis("off")
+    axes_flat[1].imshow(img_exata, cmap="gray")
+    estilizar_eixo(axes_flat[1], "Exato")
 
     # Tabela de métricas no terminal
     print("\n" + "=" * 70)
@@ -154,7 +164,7 @@ def inspecionar_imagem(
         th_tag = int(round(th_val * 100))
         img_aprox_path = encontrar_ou_gerar_aprox(img_id, dataset_dir, img_orig_path, row, gerar_faltantes)
 
-        ax = axes[idx + 2]
+        ax = axes_flat[idx + 2]
         if img_aprox_path and os.path.isfile(img_aprox_path):
             img_aprox = cv2.imread(img_aprox_path, cv2.IMREAD_GRAYSCALE)
             ax.imshow(img_aprox, cmap="gray")
@@ -165,24 +175,27 @@ def inspecionar_imagem(
             val_mse = float(np.mean(diff_sq))
             val_psnr = cv2.PSNR(img_exata, img_aprox) if val_mse > 0 else float("inf")
 
-            ax.set_title(
-                f"TH: {th_tag}% ({row['LUTs']} LUTs)\n"
-                f"Erro: {val_erro:.4f}\n"
-                f"SSIM: {val_ssim:.4f}\n"
-                f"PSNR: {val_psnr:.2f} dB",
-                fontsize=9,
-                pad=8
+            estilizar_eixo(
+                ax,
+                f"Threshold: {th_tag}%",
+                f"SSIM: {val_ssim:.4f}\nPSNR: {val_psnr:.2f}"
             )
             print(f"{f'{th_tag}%':<12} | {row['LUTs']:<6} | {val_ssim:<8.4f} | {val_erro:<8.4f} | {val_mse:<8.2f} | {val_psnr:<10.2f}")
         else:
-            ax.text(0.5, 0.5, "Não gerada", horizontalalignment="center", verticalalignment="center", fontsize=8)
-            ax.set_title(f"TH: {th_tag}%\n({row['LUTs']} LUTs)", fontsize=9, pad=8)
+            ax.text(0.5, 0.5, "Não gerada", horizontalalignment="center", verticalalignment="center", fontsize=11)
+            estilizar_eixo(
+                ax,
+                f"Threshold: {th_tag}%",
+                "SSIM: N/A\nPSNR: N/A"
+            )
             print(f"{f'{th_tag}%':<12} | {row['LUTs']:<6} | {'N/A':<8} | {'N/A':<8} | {'N/A':<8} | {'N/A':<10}")
-        ax.axis("off")
+
+    # Esconde eixos extras se o grid não for múltiplo exato
+    for extra_idx in range(total_imagens, len(axes_flat)):
+        axes_flat[extra_idx].axis("off")
 
     print("-" * 70)
-    plt.suptitle(f"Comparação Visual do Filtro Sobel por Threshold ({os.path.basename(img_orig_path)})", fontsize=13, y=1.03)
-    plt.tight_layout()
+    plt.tight_layout(h_pad=2.4, w_pad=0.8)
 
     os.makedirs(output_dir, exist_ok=True)
     out_png_id = os.path.join(output_dir, f"comparacao_todos_thresholds_{img_id}.png")
@@ -246,10 +259,17 @@ def main():
         default=DATASET_DIR_PADRAO,
         help=f"Pasta onde estão localizadas as imagens. Padrão: {DATASET_DIR_PADRAO}"
     )
+    output_dir_padrao = os.path.join(PROJ_DIR, "results") if os.path.isdir(os.path.join(PROJ_DIR, "results")) else "."
     parser.add_argument(
         "--output-dir", "-o",
-        default=".",
-        help="Diretório onde salvar as imagens geradas (.png e .pdf). Padrão: diretório atual"
+        default=output_dir_padrao,
+        help=f"Diretório onde salvar as imagens geradas (.png e .pdf). Padrão: {output_dir_padrao}"
+    )
+    parser.add_argument(
+        "--cols",
+        type=int,
+        default=4,
+        help="Número de colunas no grid visual (ex: 4 para grid 2x4 com 8 imagens). Padrão: 4"
     )
     parser.add_argument(
         "--all", "-a",
@@ -304,7 +324,8 @@ def main():
             dataset_dir=args.dataset_dir,
             output_dir=args.output_dir,
             mostrar=(not args.no_show and len(ids_processar) == 1),
-            gerar_faltantes=(not args.sem_geracao)
+            gerar_faltantes=(not args.sem_geracao),
+            colunas=args.cols
         )
         if ok:
             sucessos += 1
