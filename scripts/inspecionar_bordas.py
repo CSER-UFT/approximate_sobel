@@ -224,6 +224,115 @@ def inspecionar_imagem(
     return True
 
 
+def exportar_metricas_validacao_teste(
+    df_resultados,
+    dataset_dir=DATASET_DIR_PADRAO,
+    testing_in=TESTING_IN_PADRAO,
+    output_dir=".",
+    gerar_faltantes=True
+):
+    """Calcula e exporta CSVs com SSIM, PSNR, MSE e Erro para todas as imagens de teste e todos os limiares."""
+    if not os.path.isfile(testing_in):
+        print(f"❌ Arquivo '{testing_in}' não encontrado.")
+        return False
+
+    with open(testing_in, "r") as f:
+        linhas = [line.strip() for line in f if line.strip() and not line.strip().isdigit()]
+    ids_teste = [os.path.splitext(os.path.basename(l))[0] for l in linhas]
+
+    df_aprox = df_resultados[df_resultados["Limite_Erro"] > 0].reset_index(drop=True)
+    registros_longos = []
+    registros_largos = []
+
+    print("\n" + "=" * 80)
+    print(f"  VALIDAÇÃO COMPLETA DO CONJUNTO DE TESTE ({len(ids_teste)} imagens x {len(df_aprox)} thresholds)")
+    print("=" * 80)
+
+    for img_id in ids_teste:
+        img_orig_path = os.path.join(dataset_dir, f"{img_id}.ppm")
+        if not os.path.isfile(img_orig_path):
+            print(f"⚠️ Imagem original '{img_orig_path}' não encontrada. Pulando...")
+            continue
+
+        img_exata_path = encontrar_ou_gerar_exata(img_id, dataset_dir, img_orig_path, gerar_faltantes)
+        if not img_exata_path or not os.path.isfile(img_exata_path):
+            print(f"⚠️ Imagem exata para '{img_id}' não encontrada. Pulando...")
+            continue
+
+        img_exata = cv2.imread(img_exata_path, cv2.IMREAD_GRAYSCALE)
+        linha_larga = {"Imagem": f"{img_id}.ppm", "ID": int(img_id) if img_id.isdigit() else img_id}
+
+        for _, row in df_aprox.iterrows():
+            th_val = float(row["Limite_Erro"])
+            th_tag = int(round(th_val * 100))
+            img_aprox_path = encontrar_ou_gerar_aprox(img_id, dataset_dir, img_orig_path, row, gerar_faltantes)
+
+            if img_aprox_path and os.path.isfile(img_aprox_path):
+                img_aprox = cv2.imread(img_aprox_path, cv2.IMREAD_GRAYSCALE)
+                val_ssim = float(ssim(img_exata, img_aprox, data_range=255))
+                val_erro = max(0.0, 1.0 - val_ssim)
+                diff_sq = (img_exata.astype(np.float64) - img_aprox.astype(np.float64)) ** 2
+                val_mse = float(np.mean(diff_sq))
+                val_psnr = float(cv2.PSNR(img_exata, img_aprox)) if val_mse > 0 else float("inf")
+            else:
+                val_ssim, val_erro, val_mse, val_psnr = np.nan, np.nan, np.nan, np.nan
+
+            registros_longos.append({
+                "ID": int(img_id) if img_id.isdigit() else img_id,
+                "Imagem": f"{img_id}.ppm",
+                "Threshold": f"{th_tag}%",
+                "Limite_Erro": th_val,
+                "LUTs": int(row["LUTs"]) if "LUTs" in row else np.nan,
+                "Setup": row["Setup"] if "Setup" in row else "",
+                "Somadores": row["Somadores"] if "Somadores" in row else "",
+                "SSIM": round(val_ssim, 4) if not np.isnan(val_ssim) else np.nan,
+                "Erro_SSIM": round(val_erro, 4) if not np.isnan(val_erro) else np.nan,
+                "PSNR_dB": round(val_psnr, 2) if not np.isnan(val_psnr) else np.nan,
+                "MSE": round(val_mse, 2) if not np.isnan(val_mse) else np.nan,
+            })
+
+            linha_larga[f"SSIM_{th_tag}%"] = round(val_ssim, 4)
+            linha_larga[f"PSNR_{th_tag}%"] = round(val_psnr, 2)
+            linha_larga[f"MSE_{th_tag}%"] = round(val_mse, 2)
+
+        registros_largos.append(linha_larga)
+
+    df_longo = pd.DataFrame(registros_longos)
+    df_largo = pd.DataFrame(registros_largos)
+
+    # Adiciona estatísticas de resumo ao final da tabela larga
+    colunas_metricas = [c for c in df_largo.columns if c not in ("Imagem", "ID")]
+    resumo_rows = []
+    for nome_est, func in [
+        ("Média Aritmética", lambda s: np.nanmean(s)),
+        ("Média Geométrica", lambda s: float(np.exp(np.nanmean(np.log(np.clip(s, 1e-12, None)))))),
+        ("Desvio Padrão", lambda s: np.nanstd(s, ddof=1)),
+        ("Mínimo", lambda s: np.nanmin(s)),
+        ("Máximo", lambda s: np.nanmax(s)),
+    ]:
+        r = {"Imagem": nome_est, "ID": "-"}
+        for col in colunas_metricas:
+            casas = 4 if col.startswith("SSIM_") else 2
+            r[col] = round(float(func(df_largo[col].values.astype(float))), casas)
+        resumo_rows.append(r)
+
+    df_largo_com_resumo = pd.concat([df_largo, pd.DataFrame(resumo_rows)], ignore_index=True)
+
+    os.makedirs(output_dir, exist_ok=True)
+    csv_detalhado = os.path.join(output_dir, "validacao_teste_detalhado.csv")
+    csv_por_imagem = os.path.join(output_dir, "validacao_teste_por_imagem.csv")
+
+    df_longo.to_csv(csv_detalhado, index=False)
+    df_largo_com_resumo.to_csv(csv_por_imagem, index=False)
+
+    print(df_largo_com_resumo.to_string(index=False))
+    print("-" * 80)
+    print("✔ Arquivos CSV de validação do teste salvos com sucesso:")
+    print(f"   1. Formato detalhado (180 linhas): {csv_detalhado}")
+    print(f"   2. Formato tabela por imagem:      {csv_por_imagem}")
+    return True
+
+
 def listar_imagens_disponiveis(dataset_dir, testing_in):
     """Lista as imagens do dataset de teste disponíveis para inspeção."""
     print("📁 Imagens de Teste:")
@@ -287,6 +396,11 @@ def main():
         help="Não abre a janela gráfica interativa do matplotlib (ideal para execução em lote ou terminal/SSH)."
     )
     parser.add_argument(
+        "--tabela-teste", "-t",
+        action="store_true",
+        help="Calcula e exporta CSVs com as métricas de validação (SSIM, PSNR, MSE) de todas as imagens de teste em todos os limiares."
+    )
+    parser.add_argument(
         "--sem-geracao",
         action="store_true",
         help="Não tenta gerar imagens aproximadas faltantes sob demanda."
@@ -305,7 +419,25 @@ def main():
 
     df_resultados = pd.read_csv(args.csv)
 
+    if args.tabela_teste:
+        exportar_metricas_validacao_teste(
+            df_resultados=df_resultados,
+            dataset_dir=args.dataset_dir,
+            testing_in=TESTING_IN_PADRAO,
+            output_dir=args.output_dir,
+            gerar_faltantes=(not args.sem_geracao)
+        )
+        if not args.all:
+            return
+
     if args.all:
+        exportar_metricas_validacao_teste(
+            df_resultados=df_resultados,
+            dataset_dir=args.dataset_dir,
+            testing_in=TESTING_IN_PADRAO,
+            output_dir=args.output_dir,
+            gerar_faltantes=(not args.sem_geracao)
+        )
         if not os.path.isfile(TESTING_IN_PADRAO):
             print(f"❌ Arquivo '{TESTING_IN_PADRAO}' não encontrado para a opção --all.")
             sys.exit(1)
